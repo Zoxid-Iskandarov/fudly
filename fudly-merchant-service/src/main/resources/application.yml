@@ -1,0 +1,25 @@
+server:
+  port: 0
+spring:
+  application:
+    name: fudly-merchant-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9090/realms/fudly
+  datasource:
+    url: jdbc:postgresql://localhost:5432/merchant_db
+    username: postgres
+    password: postgres
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.yml
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
