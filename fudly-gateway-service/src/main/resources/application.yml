@@ -1,0 +1,27 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: fudly-gateway-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9090/realms/fudly
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: merchant-service-merchants
+              uri: lb://fudly-merchant-service
+              predicates:
+                - Path=/merchants/**
+            - id: merchant-service-branches
+              uri: lb://fudly-merchant-service
+              predicates:
+                - Path=/branches/**
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
