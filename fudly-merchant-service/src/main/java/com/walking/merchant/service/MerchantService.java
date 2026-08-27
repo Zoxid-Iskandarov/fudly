@@ -8,10 +8,10 @@ import com.walking.merchant.domain.exception.InvalidStatusTransitionException;
 import com.walking.merchant.domain.exception.ResourceNotFoundException;
 import com.walking.merchant.repository.BranchRepository;
 import com.walking.merchant.repository.MerchantRepository;
+import com.walking.merchant.security.SecurityUtils;
 import com.walking.merchant.service.mapper.merchant.MerchantRequestMapper;
 import com.walking.merchant.service.mapper.merchant.MerchantResponseMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,7 +37,7 @@ public class MerchantService {
     }
 
     public List<MerchantResponse> getMerchantsByOwnerId(Jwt jwt) {
-        UUID ownerId = UUID.fromString(Objects.requireNonNull(jwt.getSubject()));
+        UUID ownerId = SecurityUtils.extractOwnerId(jwt);
 
         return merchantRepository.findByOwnerId(ownerId).stream()
                 .map(merchantResponseMapper::toDto)
@@ -48,7 +48,7 @@ public class MerchantService {
     public MerchantResponse createMerchant(MerchantRequest merchantRequest, Jwt jwt) {
         Merchant merchant = merchantRequestMapper.toEntity(merchantRequest);
         merchant.setStatus(MerchantStatus.PENDING_VERIFICATION);
-        merchant.setOwnerId(UUID.fromString(Objects.requireNonNull(jwt.getSubject())));
+        merchant.setOwnerId(SecurityUtils.extractOwnerId(jwt));
 
         Merchant savedMerchant = merchantRepository.save(merchant);
 
@@ -60,10 +60,7 @@ public class MerchantService {
         Merchant merchant = merchantRepository.findById(merchantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Merchant with id %s not found".formatted(merchantId)));
 
-        UUID ownerId = UUID.fromString(Objects.requireNonNull(jwt.getSubject()));
-        if (!merchant.getOwnerId().equals(ownerId)) {
-            throw new AccessDeniedException("Not the owner of the merchant");
-        }
+        SecurityUtils.validateMerchantOwnership(merchant, jwt);
 
         merchantRequestMapper.toEntity(merchantRequest, merchant);
         Merchant updatedMerchant = merchantRepository.save(merchant);
@@ -76,10 +73,7 @@ public class MerchantService {
         Merchant merchant = merchantRepository.findById(merchantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Merchant with id %s not found".formatted(merchantId)));
 
-        UUID ownerId = UUID.fromString(Objects.requireNonNull(jwt.getSubject()));
-        if (!merchant.getOwnerId().equals(ownerId)) {
-            throw new AccessDeniedException("Not the owner of the merchant");
-        }
+        SecurityUtils.validateMerchantOwnership(merchant, jwt);
 
         if (merchant.getStatus() == MerchantStatus.CLOSED) {
             throw new InvalidStatusTransitionException("Merchant is already closed");

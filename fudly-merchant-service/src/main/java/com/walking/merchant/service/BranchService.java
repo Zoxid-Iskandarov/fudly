@@ -10,17 +10,16 @@ import com.walking.merchant.domain.exception.MerchantNotActiveException;
 import com.walking.merchant.domain.exception.ResourceNotFoundException;
 import com.walking.merchant.repository.BranchRepository;
 import com.walking.merchant.repository.MerchantRepository;
+import com.walking.merchant.security.SecurityUtils;
 import com.walking.merchant.service.mapper.branch.BranchResponseMapper;
 import com.walking.merchant.service.mapper.branch.CreateBranchRequestMapper;
 import com.walking.merchant.service.mapper.branch.UpdateBranchRequestMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -51,10 +50,7 @@ public class BranchService {
                 .orElseThrow(() -> new ResourceNotFoundException("Merchant with id %s not found"
                         .formatted(createBranchRequest.merchantId())));
 
-        UUID ownerId = UUID.fromString(Objects.requireNonNull(jwt.getSubject()));
-        if (!merchant.getOwnerId().equals(ownerId)) {
-            throw new AccessDeniedException("Not the owner of this merchant");
-        }
+        SecurityUtils.validateMerchantOwnership(merchant, jwt);
 
         if (merchant.getStatus() != MerchantStatus.ACTIVE) {
             throw new MerchantNotActiveException(
@@ -75,10 +71,7 @@ public class BranchService {
         Branch branch = branchRepository.findByIdWithMerchant(branchId)
                 .orElseThrow(() -> new ResourceNotFoundException("Branch with id %s not found".formatted(branchId)));
 
-        UUID ownerId = UUID.fromString(Objects.requireNonNull(jwt.getSubject()));
-        if (!branch.getMerchant().getOwnerId().equals(ownerId)) {
-            throw new AccessDeniedException("Not the owner of this branch's merchant");
-        }
+        SecurityUtils.validateBranchOwnership(branch, jwt);
 
         updateBranchRequestMapper.toEntity(updateBranchRequest, branch);
         Branch updatedBranch = branchRepository.save(branch);
@@ -91,10 +84,7 @@ public class BranchService {
         Branch branch = branchRepository.findByIdWithMerchant(branchId)
                 .orElseThrow(() -> new ResourceNotFoundException("Branch with id %s not found".formatted(branchId)));
 
-        UUID ownerId = UUID.fromString(Objects.requireNonNull(jwt.getSubject()));
-        if (!branch.getMerchant().getOwnerId().equals(ownerId)) {
-            throw new AccessDeniedException("Not the owner of this branch's merchant");
-        }
+        SecurityUtils.validateBranchOwnership(branch, jwt);
 
         BranchStatus current = branch.getStatus();
         boolean allowed = switch (current) {
