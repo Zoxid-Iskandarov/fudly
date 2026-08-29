@@ -109,4 +109,11 @@ public class BranchService {
 
         return branchResponseMapper.toDto(updatedBranch);
     }
+
+    public boolean canPublishListing(UUID branchId) {
+        Branch branch = branchRepository.findByIdWithMerchant(branchId)
+                .orElseThrow(() -> new ResourceNotFoundException("Branch with id %s not found".formatted(branchId)));
+
+        return branch.getStatus() == BranchStatus.OPEN && branch.getMerchant().getStatus() == MerchantStatus.ACTIVE;
+    }
 }
