@@ -3,3 +3,5 @@ databaseChangeLog:
       file: db/changelog/changeset/V1_0_1__create_merchant.sql
   - include:
       file: db/changelog/changeset/V1_0_2__create_branch.sql
+  - include:
+      file: db/changelog/changeset/V1_0_3__create_branch_staff.sql

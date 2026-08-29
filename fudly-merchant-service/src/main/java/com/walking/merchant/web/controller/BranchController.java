@@ -2,6 +2,7 @@ package com.walking.merchant.web.controller;
 
 import com.walking.merchant.domain.dto.branch.*;
 import com.walking.merchant.service.BranchService;
+import com.walking.merchant.service.BranchStaffService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class BranchController {
     private final BranchService branchService;
+    private final BranchStaffService branchStaffService;
 
     @GetMapping("/{branchId}")
     public BranchResponse getBranchById(@PathVariable UUID branchId) {
@@ -55,5 +57,37 @@ public class BranchController {
             @RequestBody @Validated UpdateBranchStatusRequest updateBranchStatusRequest,
             @AuthenticationPrincipal Jwt jwt) {
         return branchService.updateBranchStatus(branchId, updateBranchStatusRequest.status(), jwt);
+    }
+
+    @GetMapping("/{branchId}/can-publish")
+    public boolean canPublishListing(@PathVariable UUID branchId) {
+        return branchService.canPublishListing(branchId);
+    }
+
+    @GetMapping("/{branchId}/staff/{userId}")
+    public boolean hasAccessToBranch(
+            @PathVariable UUID branchId,
+            @PathVariable UUID userId) {
+        return branchStaffService.hasAccessToBranch(branchId, userId);
+    }
+
+    @PutMapping("/{branchId}/staff/{userId}")
+    @PreAuthorize("hasRole('MERCHANT_OWNER')")
+    public ResponseEntity<Void> assignStaffToBranch(
+            @PathVariable UUID branchId,
+            @PathVariable UUID userId,
+            @AuthenticationPrincipal Jwt jwt) {
+        branchStaffService.assignStaffToBranch(branchId, userId, jwt);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{branchId}/staff/{userId}")
+    @PreAuthorize("hasRole('MERCHANT_OWNER')")
+    public ResponseEntity<Void> removeStaffFromBranch(
+            @PathVariable UUID branchId,
+            @PathVariable UUID userId,
+            @AuthenticationPrincipal Jwt jwt) {
+        branchStaffService.removeStaffFromBranch(branchId, userId, jwt);
+        return ResponseEntity.noContent().build();
     }
 }
