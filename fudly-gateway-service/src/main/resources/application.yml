@@ -21,6 +21,10 @@ spring:
               uri: lb://fudly-merchant-service
               predicates:
                 - Path=/branches/**
+            - id: listing-service
+              uri: lb://fudly-listing-service
+              predicates:
+                - Path=/listings/**
 eureka:
   client:
     service-url:
