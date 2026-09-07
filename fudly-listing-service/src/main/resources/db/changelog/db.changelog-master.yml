@@ -1,3 +1,5 @@
 databaseChangeLog:
   - include:
       file: db/changelog/changeset/V1_0_1__create_listing.sql
+  - include:
+      file: db/changelog/changeset/V1_0_2__create_outbox_event.sql
