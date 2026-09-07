@@ -1,6 +1,6 @@
 package com.walking.listing.repository;
 
-import com.walking.listing.domain.entity.Listing;
+import com.walking.listing.domain.entity.listing.Listing;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 

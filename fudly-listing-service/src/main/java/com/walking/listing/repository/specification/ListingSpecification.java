@@ -1,7 +1,7 @@
 package com.walking.listing.repository.specification;
 
-import com.walking.listing.domain.entity.Listing;
-import com.walking.listing.domain.entity.ListingStatus;
+import com.walking.listing.domain.entity.listing.Listing;
+import com.walking.listing.domain.entity.listing.ListingStatus;
 import lombok.experimental.UtilityClass;
 import org.springframework.data.jpa.domain.Specification;
 

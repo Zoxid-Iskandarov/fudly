@@ -1,7 +1,7 @@
-package com.walking.listing.service.mapper;
+package com.walking.listing.mapper.listing;
 
 import com.walking.listing.domain.dto.listing.UpdateActiveListingRequest;
-import com.walking.listing.domain.entity.Listing;
+import com.walking.listing.domain.entity.listing.Listing;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.MappingTarget;

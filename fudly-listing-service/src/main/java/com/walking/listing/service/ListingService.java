@@ -2,17 +2,21 @@ package com.walking.listing.service;
 
 import com.walking.listing.client.MerchantServiceClient;
 import com.walking.listing.domain.dto.listing.*;
-import com.walking.listing.domain.entity.Listing;
-import com.walking.listing.domain.entity.ListingStatus;
+import com.walking.listing.domain.entity.listing.Listing;
+import com.walking.listing.domain.entity.listing.ListingStatus;
+import com.walking.listing.domain.entity.outbox.EventType;
+import com.walking.listing.domain.entity.outbox.OutboxEvent;
+import com.walking.listing.domain.entity.outbox.OutboxStatus;
 import com.walking.listing.domain.exception.InvalidListingOperationException;
 import com.walking.listing.domain.exception.ListingNotEditableException;
 import com.walking.listing.domain.exception.ResourceNotFoundException;
 import com.walking.listing.repository.ListingRepository;
+import com.walking.listing.repository.OutboxEventRepository;
 import com.walking.listing.repository.specification.ListingSpecification;
-import com.walking.listing.service.mapper.CreateListingRequestMapper;
-import com.walking.listing.service.mapper.ListingResponseMapper;
-import com.walking.listing.service.mapper.UpdateActiveListingRequestMapper;
-import com.walking.listing.service.mapper.UpdateDraftListingRequestMapper;
+import com.walking.listing.mapper.listing.CreateListingRequestMapper;
+import com.walking.listing.mapper.listing.ListingResponseMapper;
+import com.walking.listing.mapper.listing.UpdateActiveListingRequestMapper;
+import com.walking.listing.mapper.listing.UpdateDraftListingRequestMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +25,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.util.Objects;
@@ -31,7 +36,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ListingService {
     private final ListingRepository listingRepository;
+    private final OutboxEventRepository outboxEventRepository;
     private final MerchantServiceClient merchantServiceClient;
+    private final ObjectMapper objectMapper;
 
     private final ListingResponseMapper listingResponseMapper;
     private final CreateListingRequestMapper createListingRequestMapper;
@@ -113,7 +120,16 @@ public class ListingService {
         }
 
         listing.setStatus(ListingStatus.ACTIVE);
-        return listingResponseMapper.toDto(listingRepository.save(listing));
+        Listing publishedListing = listingRepository.save(listing);
+
+        createOutboxEvent(publishedListing.getId(), EventType.LISTING_PUBLISHED, new ListingPublishedPayload(
+                publishedListing.getId(),
+                publishedListing.getBranchId(),
+                publishedListing.getQuantity(),
+                publishedListing.getDiscountedPrice(),
+                publishedListing.getExpirationTime()));
+
+        return listingResponseMapper.toDto(publishedListing);
     }
 
     @Transactional
@@ -125,8 +141,17 @@ public class ListingService {
             throw new InvalidListingOperationException("Only DRAFT or ACTIVE listings can be cancelled");
         }
 
+        boolean wasActive = listing.getStatus() == ListingStatus.ACTIVE;
+
         listing.setStatus(ListingStatus.CANCELLED);
-        return listingResponseMapper.toDto(listingRepository.save(listing));
+        Listing cancelledListing = listingRepository.save(listing);
+
+        if (wasActive) {
+            createOutboxEvent(cancelledListing.getId(), EventType.LISTING_CANCELLED,
+                    new ListingCancelledPayload(cancelledListing.getId(), cancelledListing.getBranchId()));
+        }
+
+        return listingResponseMapper.toDto(cancelledListing);
     }
 
     private Listing findListingOrThrow(UUID listingId) {
@@ -145,5 +170,15 @@ public class ListingService {
         if (!merchantServiceClient.hasAccess(branchId, userId)) {
             throw new AccessDeniedException("User %s does not have access to branch %s".formatted(userId, branchId));
         }
+    }
+
+    private void createOutboxEvent(UUID aggregateId, EventType eventType, Object payload) {
+        outboxEventRepository.save(OutboxEvent.builder()
+                .aggregateType("Listing")
+                .aggregateId(aggregateId)
+                .eventType(eventType)
+                .payload(objectMapper.writeValueAsString(payload))
+                .status(OutboxStatus.PENDING)
+                .build());
     }
 }

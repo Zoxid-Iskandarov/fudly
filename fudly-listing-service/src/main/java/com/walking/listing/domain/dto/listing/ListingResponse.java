@@ -1,6 +1,6 @@
 package com.walking.listing.domain.dto.listing;
 
-import com.walking.listing.domain.entity.ListingStatus;
+import com.walking.listing.domain.entity.listing.ListingStatus;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;

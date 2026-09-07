@@ -1,4 +1,4 @@
-package com.walking.listing.domain.entity;
+package com.walking.listing.domain.entity.listing;
 
 import jakarta.persistence.*;
 import lombok.*;
