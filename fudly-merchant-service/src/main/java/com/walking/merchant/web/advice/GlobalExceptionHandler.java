@@ -4,6 +4,7 @@ import com.walking.merchant.domain.dto.error.ErrorResponse;
 import com.walking.merchant.domain.exception.InvalidStatusTransitionException;
 import com.walking.merchant.domain.exception.MerchantNotActiveException;
 import com.walking.merchant.domain.exception.ResourceNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -19,17 +20,17 @@ import java.time.OffsetDateTime;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException e) {
-        return buildErrorResponse(HttpStatus.NOT_FOUND, e.getMessage());
+    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException e, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, e.getMessage(), request);
     }
 
     @ExceptionHandler({MerchantNotActiveException.class, InvalidStatusTransitionException.class})
-    public ResponseEntity<ErrorResponse> handleConflictExceptions(RuntimeException e) {
-        return buildErrorResponse(HttpStatus.CONFLICT, e.getMessage());
+    public ResponseEntity<ErrorResponse> handleConflictExceptions(RuntimeException e, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.CONFLICT, e.getMessage(), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException e) {
+    public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException e, HttpServletRequest request) {
         String message = e.getBindingResult()
                 .getFieldErrors()
                 .stream()
@@ -37,22 +38,22 @@ public class GlobalExceptionHandler {
                 .reduce("%s; %s"::formatted)
                 .orElse("Validation error");
 
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, message);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException e, HttpServletRequest request) {
         String name = e.getName();
         String type = e.getRequiredType() != null ? e.getRequiredType().getSimpleName() : "unknown";
         Object value = e.getValue();
         String message = "Failed to convert parameter '%s' with value '%s' to required type '%s'"
                 .formatted(name, value, type);
 
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, message);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(HttpMessageNotReadableException e) {
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(HttpMessageNotReadableException e, HttpServletRequest request) {
         String message = "Malformed JSON request or invalid enum value";
         Throwable cause = e.getCause();
         if (cause instanceof InvalidFormatException ife) {
@@ -61,11 +62,18 @@ public class GlobalExceptionHandler {
             message = "Invalid value '%s' for type '%s'".formatted(invalidValue, targetType);
         }
 
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, message);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request);
     }
 
-    private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status, String message) {
+    private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status, String message, HttpServletRequest request) {
+        ErrorResponse response = new ErrorResponse(
+                OffsetDateTime.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                message,
+                request.getRequestURI());
+
         return ResponseEntity.status(status)
-                .body(new ErrorResponse(status.value(), status.getReasonPhrase(), message, OffsetDateTime.now()));
+                .body(response);
     }
 }

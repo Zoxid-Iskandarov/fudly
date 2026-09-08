@@ -31,10 +31,11 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
         response.setCharacterEncoding(StandardCharsets.UTF_8);
 
         ErrorResponse errorResponse = new ErrorResponse(
+                OffsetDateTime.now(),
                 HttpStatus.FORBIDDEN.value(),
                 HttpStatus.FORBIDDEN.getReasonPhrase(),
                 accessDeniedException.getMessage(),
-                OffsetDateTime.now());
+                request.getRequestURI());
 
         objectMapper.writeValue(response.getWriter(), errorResponse);
     }

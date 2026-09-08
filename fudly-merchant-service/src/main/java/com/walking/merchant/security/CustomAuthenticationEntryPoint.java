@@ -31,10 +31,11 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
         response.setCharacterEncoding(StandardCharsets.UTF_8);
 
         ErrorResponse errorResponse = new ErrorResponse(
-                HttpStatus.UNAUTHORIZED.value(),
-                HttpStatus.UNAUTHORIZED.getReasonPhrase(),
+                OffsetDateTime.now(),
+                HttpStatus.FORBIDDEN.value(),
+                HttpStatus.FORBIDDEN.getReasonPhrase(),
                 authException.getMessage(),
-                OffsetDateTime.now());
+                request.getRequestURI());
 
         objectMapper.writeValue(response.getWriter(), errorResponse);
     }

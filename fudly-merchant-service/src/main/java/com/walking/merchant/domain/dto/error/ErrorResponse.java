@@ -3,9 +3,10 @@ package com.walking.merchant.domain.dto.error;
 import java.time.OffsetDateTime;
 
 public record ErrorResponse(
-        Integer status,
+        OffsetDateTime timestamp,
+        int status,
         String error,
         String message,
-        OffsetDateTime timestamp
+        String path
 ) {
 }
