@@ -1,5 +1,7 @@
 package com.walking.listing.domain.dto.common;
 
+import tools.jackson.databind.JsonNode;
+
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -9,6 +11,6 @@ public record EventEnvelope(
         String aggregateType,
         UUID aggregateId,
         OffsetDateTime occurredAt,
-        Object payload
+        JsonNode payload
 ) {
 }
