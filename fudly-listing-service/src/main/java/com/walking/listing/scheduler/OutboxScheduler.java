@@ -1,6 +1,6 @@
 package com.walking.listing.scheduler;
 
-import com.walking.listing.service.OutboxPublisherService;
+import com.walking.listing.application.service.OutboxPublisherService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;

@@ -1,7 +1,7 @@
 package com.walking.listing.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.walking.listing.domain.dto.common.ErrorResponse;
+import com.walking.listing.application.dto.common.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
