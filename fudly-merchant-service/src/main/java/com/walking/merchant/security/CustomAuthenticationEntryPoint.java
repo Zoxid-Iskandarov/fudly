@@ -1,7 +1,7 @@
 package com.walking.merchant.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.walking.merchant.domain.dto.error.ErrorResponse;
+import com.walking.merchant.application.dto.common.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
