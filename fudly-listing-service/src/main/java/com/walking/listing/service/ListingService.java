@@ -5,15 +5,14 @@ import com.walking.listing.domain.dto.listing.*;
 import com.walking.listing.domain.entity.listing.Listing;
 import com.walking.listing.domain.entity.listing.ListingStatus;
 import com.walking.listing.domain.entity.outbox.EventType;
-import com.walking.listing.domain.entity.outbox.OutboxEvent;
-import com.walking.listing.domain.entity.outbox.OutboxStatus;
 import com.walking.listing.domain.exception.InvalidListingOperationException;
 import com.walking.listing.domain.exception.ListingNotEditableException;
 import com.walking.listing.domain.exception.ResourceNotFoundException;
 import com.walking.listing.repository.ListingRepository;
-import com.walking.listing.repository.OutboxEventRepository;
 import com.walking.listing.repository.specification.ListingSpecification;
 import com.walking.listing.mapper.listing.CreateListingRequestMapper;
+import com.walking.listing.mapper.listing.ListingCancelledPayloadMapper;
+import com.walking.listing.mapper.listing.ListingPublishedPayloadMapper;
 import com.walking.listing.mapper.listing.ListingResponseMapper;
 import com.walking.listing.mapper.listing.UpdateActiveListingRequestMapper;
 import com.walking.listing.mapper.listing.UpdateDraftListingRequestMapper;
@@ -25,7 +24,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.util.Objects;
@@ -36,14 +34,15 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ListingService {
     private final ListingRepository listingRepository;
-    private final OutboxEventRepository outboxEventRepository;
+    private final OutboxEventService outboxEventService;
     private final MerchantServiceClient merchantServiceClient;
-    private final ObjectMapper objectMapper;
 
     private final ListingResponseMapper listingResponseMapper;
     private final CreateListingRequestMapper createListingRequestMapper;
     private final UpdateDraftListingRequestMapper updateDraftListingRequestMapper;
     private final UpdateActiveListingRequestMapper updateActiveListingRequestMapper;
+    private final ListingPublishedPayloadMapper listingPublishedPayloadMapper;
+    private final ListingCancelledPayloadMapper listingCancelledPayloadMapper;
 
     public Page<ListingResponse> searchListings(ListingSearchRequest request, Pageable pageable, Jwt jwt) {
         ListingStatus effectiveStatus = request.status();
@@ -122,12 +121,8 @@ public class ListingService {
         listing.setStatus(ListingStatus.ACTIVE);
         Listing publishedListing = listingRepository.save(listing);
 
-        createOutboxEvent(publishedListing.getId(), EventType.LISTING_PUBLISHED, new ListingPublishedPayload(
-                publishedListing.getId(),
-                publishedListing.getBranchId(),
-                publishedListing.getQuantity(),
-                publishedListing.getDiscountedPrice(),
-                publishedListing.getExpirationTime()));
+        outboxEventService.createOutboxEvent(publishedListing.getId(), EventType.LISTING_PUBLISHED,
+                listingPublishedPayloadMapper.toPayload(publishedListing));
 
         return listingResponseMapper.toDto(publishedListing);
     }
@@ -147,8 +142,8 @@ public class ListingService {
         Listing cancelledListing = listingRepository.save(listing);
 
         if (wasActive) {
-            createOutboxEvent(cancelledListing.getId(), EventType.LISTING_CANCELLED,
-                    new ListingCancelledPayload(cancelledListing.getId(), cancelledListing.getBranchId()));
+            outboxEventService.createOutboxEvent(cancelledListing.getId(), EventType.LISTING_CANCELLED,
+                    listingCancelledPayloadMapper.toPayload(cancelledListing));
         }
 
         return listingResponseMapper.toDto(cancelledListing);
@@ -170,15 +165,5 @@ public class ListingService {
         if (!merchantServiceClient.hasAccess(branchId, userId)) {
             throw new AccessDeniedException("User %s does not have access to branch %s".formatted(userId, branchId));
         }
-    }
-
-    private void createOutboxEvent(UUID aggregateId, EventType eventType, Object payload) {
-        outboxEventRepository.save(OutboxEvent.builder()
-                .aggregateType("Listing")
-                .aggregateId(aggregateId)
-                .eventType(eventType)
-                .payload(objectMapper.writeValueAsString(payload))
-                .status(OutboxStatus.PENDING)
-                .build());
     }
 }
