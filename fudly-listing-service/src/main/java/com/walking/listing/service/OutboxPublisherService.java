@@ -23,7 +23,7 @@ import java.util.UUID;
 public class OutboxPublisherService {
     private final OutboxEventRepository outboxEventRepository;
     private final KafkaTemplate<String, EventEnvelope> kafkaTemplate;
-    private final TransactionTemplate transactionalTemplate;
+    private final TransactionTemplate transactionTemplate;
 
     private final EventEnvelopeMapper eventEnvelopeMapper;
     private final ObjectMapper objectMapper;
@@ -55,7 +55,7 @@ public class OutboxPublisherService {
 
     public void requeueExpiredEvents() {
         OffsetDateTime threshold = OffsetDateTime.now().minusMinutes(appProperties.getOutbox().getLeaseTimeMinutes());
-        Integer count = transactionalTemplate.execute(status ->
+        Integer count = transactionTemplate.execute(status ->
                 outboxEventRepository.requeueExpired(threshold));
         if (count != null && count > 0) {
             log.debug("Requeued {} expired processing outbox events back to PENDING", count);
@@ -63,7 +63,7 @@ public class OutboxPublisherService {
     }
 
     private List<OutboxEvent> claimBatch() {
-        return transactionalTemplate.execute(status -> {
+        return transactionTemplate.execute(status -> {
             List<OutboxEvent> events = outboxEventRepository.findByPendingAndLock(appProperties.getOutbox().getBatchSize());
 
             if (events.isEmpty()) return List.of();
@@ -79,12 +79,12 @@ public class OutboxPublisherService {
     }
 
     private void markSent(UUID id) {
-        transactionalTemplate.executeWithoutResult(status ->
+        transactionTemplate.executeWithoutResult(status ->
                 outboxEventRepository.updateStatusAndSendAt(id, OutboxStatus.SENT, OffsetDateTime.now()));
     }
 
     private void markFailed(UUID id) {
-        transactionalTemplate.executeWithoutResult(status ->
+        transactionTemplate.executeWithoutResult(status ->
                 outboxEventRepository.updateStatus(id, OutboxStatus.FAILED));
     }
 }

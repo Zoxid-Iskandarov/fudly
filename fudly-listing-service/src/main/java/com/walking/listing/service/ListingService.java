@@ -51,7 +51,7 @@ public class ListingService {
             effectiveStatus = ListingStatus.ACTIVE;
         } else if (effectiveStatus != ListingStatus.ACTIVE) {
             if (jwt == null || request.branchId() == null) {
-                throw new AccessDeniedException("Authentication and branchId required to view non-active listings");
+                throw new AccessDeniedException("Authentication and branchId are required to view non-active listings");
             }
             checkBranchAccess(request.branchId(), jwt);
         }
@@ -84,7 +84,7 @@ public class ListingService {
         checkBranchAccess(listing.getBranchId(), jwt);
 
         if (listing.getStatus() != ListingStatus.DRAFT) {
-            throw new ListingNotEditableException("Full edit is only allowed while listing is in DRAFT");
+            throw new ListingNotEditableException("Listing can only be fully edited while in DRAFT status");
         }
 
         validateDiscount(request.originalPrice(), request.discountedPrice());
@@ -99,7 +99,7 @@ public class ListingService {
         checkBranchAccess(listing.getBranchId(), jwt);
 
         if (listing.getStatus() != ListingStatus.ACTIVE) {
-            throw new ListingNotEditableException("This operation is only allowed while listing is ACTIVE");
+            throw new ListingNotEditableException("This operation is only allowed when listing is ACTIVE");
         }
 
         updateActiveListingRequestMapper.toEntity(request, listing);
@@ -112,10 +112,10 @@ public class ListingService {
         checkBranchAccess(listing.getBranchId(), jwt);
 
         if (listing.getStatus() != ListingStatus.DRAFT) {
-            throw new InvalidListingOperationException("Only DRAFT listings can be published");
+            throw new InvalidListingOperationException("Only listings in DRAFT status can be published");
         }
         if (!merchantServiceClient.canPublishListing(listing.getBranchId())) {
-            throw new InvalidListingOperationException("Cannot publish listing because branch or merchant is not active");
+            throw new InvalidListingOperationException("Cannot publish listing: branch or merchant is not active");
         }
 
         listing.setStatus(ListingStatus.ACTIVE);
@@ -133,7 +133,7 @@ public class ListingService {
         checkBranchAccess(listing.getBranchId(), jwt);
 
         if (listing.getStatus() != ListingStatus.DRAFT && listing.getStatus() != ListingStatus.ACTIVE) {
-            throw new InvalidListingOperationException("Only DRAFT or ACTIVE listings can be cancelled");
+            throw new InvalidListingOperationException("Only listings in DRAFT or ACTIVE status can be cancelled");
         }
 
         boolean wasActive = listing.getStatus() == ListingStatus.ACTIVE;
