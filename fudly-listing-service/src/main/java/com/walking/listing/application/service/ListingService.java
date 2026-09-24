@@ -8,7 +8,6 @@ import com.walking.listing.domain.entity.outbox.EventType;
 import com.walking.listing.domain.exception.InvalidListingOperationException;
 import com.walking.listing.domain.exception.ListingNotEditableException;
 import com.walking.listing.domain.exception.ResourceNotFoundException;
-import com.walking.listing.dto.listing.*;
 import com.walking.listing.domain.repository.ListingRepository;
 import com.walking.listing.domain.repository.specification.ListingSpecification;
 import com.walking.listing.application.mapper.listing.CreateListingRequestMapper;
