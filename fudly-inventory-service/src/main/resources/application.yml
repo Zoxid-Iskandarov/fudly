@@ -59,4 +59,5 @@ app:
     consumers:
       listing-status-sync: inventory-service.listing-status-sync
   reservation:
+    ttl-minutes: 10
     expiration-delay-ms: 60000
