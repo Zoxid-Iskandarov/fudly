@@ -1,4 +1,4 @@
-package com.walking.listing.application.dto.common;
+package com.walking.listing.application.event;
 
 import tools.jackson.databind.JsonNode;
 

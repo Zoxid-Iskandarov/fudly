@@ -1,10 +1,10 @@
-package com.walking.listing.application.service;
+package com.walking.listing.application.kafka;
 
+import com.walking.listing.application.event.EventEnvelope;
+import com.walking.listing.application.mapper.outbox.EventEnvelopeMapper;
 import com.walking.listing.config.AppProperties;
-import com.walking.listing.application.dto.common.EventEnvelope;
 import com.walking.listing.domain.entity.outbox.OutboxEvent;
 import com.walking.listing.domain.entity.outbox.OutboxStatus;
-import com.walking.listing.application.mapper.outbox.EventEnvelopeMapper;
 import com.walking.listing.domain.repository.OutboxEventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,7 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class OutboxPublisherService {
+public class OutboxEventPublisher {
     private final OutboxEventRepository outboxEventRepository;
     private final KafkaTemplate<String, EventEnvelope> kafkaTemplate;
     private final TransactionTemplate transactionTemplate;
@@ -35,8 +35,9 @@ public class OutboxPublisherService {
         for (OutboxEvent event : events) {
             try {
                 EventEnvelope envelope = eventEnvelopeMapper.toEnvelope(event, objectMapper.readTree(event.getPayload()));
+                String topic = appProperties.getKafka().getTopics().getListing();
 
-                kafkaTemplate.send(appProperties.getOutbox().getTopic(), event.getAggregateId().toString(), envelope)
+                kafkaTemplate.send(topic, event.getAggregateId().toString(), envelope)
                         .whenComplete((result, e) -> {
                             if (e != null) {
                                 log.error("Failed to publish outbox event to Kafka: eventId={}", event.getId(), e);
@@ -54,7 +55,9 @@ public class OutboxPublisherService {
     }
 
     public void requeueExpiredEvents() {
-        OffsetDateTime threshold = OffsetDateTime.now().minusMinutes(appProperties.getOutbox().getLeaseTimeMinutes());
+        int leaseTimeMinutes = appProperties.getKafka().getOutbox().getLeaseTimeMinutes();
+
+        OffsetDateTime threshold = OffsetDateTime.now().minusMinutes(leaseTimeMinutes);
         Integer count = transactionTemplate.execute(status ->
                 outboxEventRepository.requeueExpired(threshold));
         if (count != null && count > 0) {
@@ -63,8 +66,10 @@ public class OutboxPublisherService {
     }
 
     private List<OutboxEvent> claimBatch() {
+        int batchSize = appProperties.getKafka().getOutbox().getBatchSize();
+
         return transactionTemplate.execute(status -> {
-            List<OutboxEvent> events = outboxEventRepository.findByPendingAndLock(appProperties.getOutbox().getBatchSize());
+            List<OutboxEvent> events = outboxEventRepository.findByPendingAndLock(batchSize);
 
             if (events.isEmpty()) return List.of();
 
