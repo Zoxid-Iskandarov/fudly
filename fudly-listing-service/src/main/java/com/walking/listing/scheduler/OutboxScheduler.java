@@ -1,6 +1,6 @@
 package com.walking.listing.scheduler;
 
-import com.walking.listing.application.service.OutboxPublisherService;
+import com.walking.listing.application.kafka.OutboxEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -8,15 +8,15 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class OutboxScheduler {
-    private final OutboxPublisherService outboxPublisherService;
+    private final OutboxEventPublisher outboxEventPublisher;
 
-    @Scheduled(fixedDelayString = "${app.outbox.fixed-delay-ms}")
+    @Scheduled(fixedDelayString = "${app.kafka.outbox.fixed-delay-ms}")
     public void publishPendingEvents() {
-        outboxPublisherService.publishPendingEvents();
+        outboxEventPublisher.publishPendingEvents();
     }
 
-    @Scheduled(fixedDelayString = "${app.outbox.requeue-delay-ms}")
+    @Scheduled(fixedDelayString = "${app.kafka.outbox.requeue-delay-ms}")
     public void requeueExpiredEvents() {
-        outboxPublisherService.requeueExpiredEvents();
+        outboxEventPublisher.requeueExpiredEvents();
     }
 }

@@ -10,7 +10,7 @@ public class KafkaConfig {
 
     @Bean
     public NewTopic listingEventsTopic(AppProperties appProperties) {
-        return TopicBuilder.name(appProperties.getOutbox().getTopic())
+        return TopicBuilder.name(appProperties.getKafka().getTopics().getListing())
                 .partitions(3)
                 .replicas(1)
                 .build();

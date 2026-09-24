@@ -10,16 +10,37 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix = "app")
 public class AppProperties {
-
-    private Outbox outbox = new Outbox();
+    private Kafka kafka = new Kafka();
 
     @Getter
     @Setter
-    public static class Outbox {
-        private String topic;
-        private int batchSize;
-        private long fixedDelayMs;
-        private long requeueDelayMs;
-        private int leaseTimeMinutes;
+    public static class Kafka {
+        private int partitions;
+        private int replicas;
+        private Topics topics = new Topics();
+        private Outbox outbox = new Outbox();
+        private Consumers consumers = new Consumers();
+
+        @Getter
+        @Setter
+        public static class Topics {
+            private String listing;
+            private String inventory;
+        }
+
+        @Getter
+        @Setter
+        public static class Outbox {
+            private int batchSize;
+            private long fixedDelayMs;
+            private long requeueDelayMs;
+            private int leaseTimeMinutes;
+        }
+
+        @Getter
+        @Setter
+        public static class Consumers {
+            private String inventoryStatusSync;
+        }
     }
 }
