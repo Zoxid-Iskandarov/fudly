@@ -1,6 +1,6 @@
 package com.walking.listing.application.mapper.outbox;
 
-import com.walking.listing.application.dto.common.EventEnvelope;
+import com.walking.listing.application.event.EventEnvelope;
 import com.walking.listing.domain.entity.outbox.OutboxEvent;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

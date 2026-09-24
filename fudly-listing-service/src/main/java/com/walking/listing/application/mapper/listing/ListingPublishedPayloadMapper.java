@@ -1,6 +1,6 @@
 package com.walking.listing.application.mapper.listing;
 
-import com.walking.listing.application.dto.listing.ListingPublishedPayload;
+import com.walking.listing.application.event.ListingPublishedPayload;
 import com.walking.listing.domain.entity.listing.Listing;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
